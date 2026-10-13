@@ -1,7 +1,6 @@
 # Arbeitszeit – Gleitzeit-Erfassung (PWA)
 
-Progressive Web App zur Erfassung der Arbeitszeit mit Gleitzeit-Saldo
-(öffentlicher Dienst, Saarland). Läuft offline, alle Daten bleiben auf dem Handy (IndexedDB).
+Progressive Web App zur Erfassung der Arbeitszeit mit Gleitzeit-Saldo. Läuft offline, alle Daten bleiben auf dem Handy (IndexedDB).
 Kein Server, kein Login, kein Build-Schritt.
 
 ## Dateien
@@ -14,7 +13,7 @@ Kein Server, kein Login, kein Build-Schritt.
 | `ui-history.js` | Verlauf (Kalender + Tagesliste) und Tages-Editor |
 | `ui-settings.js` | Einstellungen, Export, Backup |
 | `calc.js` | **Berechnungslogik** (Pausenregeln, Saldo, Feierabend, Warnungen) |
-| `holidays.js` | Feiertage Saarland, Ostern per Algorithmus |
+| `holidays.js` | Feiertage, Ostern per Algorithmus |
 | `time.js` | Datums-/Zeithilfen und Formatierung |
 | `export.js` | CSV-Export und JSON-Backup |
 | `db.js`, `store.js` | Speicherung in IndexedDB |
@@ -29,7 +28,7 @@ Kein Server, kein Login, kein Build-Schritt.
 - Über 9:00 h (nach Abzug der 30 Min.): mindestens 45 Min. Pause (§ 4 ArbZG).
 - Pausenblöcke unter 15 Min. werden abgezogen, zählen aber nicht zur Mindestpause.
 - Urlaub/Krank: Soll erfüllt (±0). Gleittag: volles Tagessoll wird abgezogen.
-- Feiertage Saarland automatisch, 24.12./31.12. dienstfrei (abschaltbar).
+- Feiertage automatisch, 24.12./31.12. dienstfrei (abschaltbar).
 - Minutengenau: Sekunden werden abgeschnitten.
 
 ## Tests ausführen
