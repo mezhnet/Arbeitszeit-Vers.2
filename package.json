@@ -1,0 +1,12 @@
+{
+  "name": "arbeitszeit-gleitzeit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PWA zur Erfassung der Arbeitszeit mit Gleitzeit-Saldo (öffentlicher Dienst, Saarland)",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "icons": "node tools/make-icons.mjs",
+    "serve": "node tools/serve.mjs"
+  }
+}

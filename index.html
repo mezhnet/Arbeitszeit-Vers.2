@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="Arbeitszeit und Gleitzeit-Saldo erfassen – offline, Daten nur auf dem Gerät.">
+  <title>Arbeitszeit</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <div id="update-banner" class="update-banner" hidden>
+    <span>Neue Version verfügbar</span>
+    <button type="button" class="btn btn-small btn-primary">Aktualisieren</button>
+  </div>
+
+  <main id="app">
+    <section id="view-today" class="view view-today" aria-label="Heute"></section>
+    <section id="view-history" class="view" aria-label="Verlauf" hidden></section>
+    <section id="view-settings" class="view" aria-label="Einstellungen" hidden></section>
+  </main>
+
+  <nav class="tabbar" aria-label="Hauptnavigation">
+    <button type="button" data-view="today" aria-current="page">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <span>Heute</span>
+    </button>
+    <button type="button" data-view="history" aria-current="false">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+      <span>Verlauf</span>
+    </button>
+    <button type="button" data-view="settings" aria-current="false">
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+      <span>Einstellungen</span>
+    </button>
+  </nav>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="day-dialog" class="dialog-sheet" aria-label="Tag bearbeiten"></dialog>
+  <dialog id="confirm-dialog" class="dialog-confirm"></dialog>
+
+  <noscript><p class="fatal">Bitte JavaScript aktivieren.</p></noscript>
+</body>
+</html>
