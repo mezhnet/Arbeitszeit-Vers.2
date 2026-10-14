@@ -83,6 +83,7 @@ export function sanitizeDay(d) {
       : [],
     absence: typeof d.absence === 'string' && Object.hasOwn(ABSENCES, d.absence) ? d.absence : null,
     note: typeof d.note === 'string' ? d.note : '',
+    plan: num(d.plan),
     updatedAt: num(d.updatedAt) ?? 0,
   };
 }

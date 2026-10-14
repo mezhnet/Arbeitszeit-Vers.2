@@ -34,12 +34,12 @@ export function getDay(key) {
 }
 
 export function emptyDay(key) {
-  return { date: key, checkIn: null, checkOut: null, pauses: [], absence: null, note: '' };
+  return { date: key, checkIn: null, checkOut: null, pauses: [], absence: null, note: '', plan: null };
 }
 
 /** Speichert einen Tag. Ein komplett leerer Tag wird gelöscht. */
 export async function putDay(day) {
-  const empty = day.checkIn == null && !day.absence && !day.pauses?.length && !day.note;
+  const empty = day.checkIn == null && !day.absence && !day.pauses?.length && !day.note && day.plan == null;
   if (empty) return removeDay(day.date);
   const copy = { ...structuredClone(day), updatedAt: Date.now() };
   state.days[copy.date] = copy;

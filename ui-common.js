@@ -7,6 +7,8 @@ export function esc(value) {
 /** Kurzes haptisches Feedback (falls vom Gerät unterstützt). */
 export function vibrate(pattern = 15) {
   try {
+    // Chrome erlaubt Vibration erst, nachdem der Nutzer einmal auf die Seite getippt hat
+    if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
     navigator.vibrate?.(pattern);
   } catch {
     /* nicht unterstützt */

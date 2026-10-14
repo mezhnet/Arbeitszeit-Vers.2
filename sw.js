@@ -1,7 +1,7 @@
 // Service Worker: speichert alle App-Dateien, damit die App auch offline startet.
 // WICHTIG: Nach jeder Änderung an App-Dateien VERSION erhöhen – dann bietet die App das Update an.
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const PREFIX = 'arbeitszeit-gleitzeit-';
 const CACHE = `${PREFIX}${VERSION}`;
 const FILES = [
@@ -18,6 +18,7 @@ const FILES = [
   './export.js',
   './ui-common.js',
   './ui-today.js',
+  './ui-plan.js',
   './ui-history.js',
   './ui-settings.js',
   './icons/icon.svg',

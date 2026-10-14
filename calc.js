@@ -244,6 +244,41 @@ export function computeEnd(day, target, now) {
   };
 }
 
+/** Tag für Planungen: der laufende Tag oder – noch nicht eingecheckt – „Einchecken jetzt“. */
+function planningDay(day, now) {
+  return day && day.checkIn != null && day.checkOut == null ? day : { checkIn: now, checkOut: null, pauses: [] };
+}
+
+/** Frühester Feierabend für eine gewünschte Netto-Arbeitszeit (`planMinutes`), auch ohne Check-in. */
+export function planEnd(day, planMinutes, now) {
+  return computeEnd(planningDay(day, now), planMinutes, now);
+}
+
+/**
+ * Netto-Arbeitszeit, wenn man um `leaveTs` geht. Eine laufende Pause endet jetzt,
+ * weitere Pausen werden nicht angenommen. Ohne Check-in: Einchecken jetzt.
+ */
+export function netIfLeaving(day, leaveTs, now) {
+  const base = planningDay(day, now);
+  const hypo = { ...base, pauses: (base.pauses || []).map((p) => ({ start: p.start, end: p.end ?? now })), checkOut: leaveTs };
+  return evaluateDay(hypo, leaveTs).net;
+}
+
+/**
+ * Bester Zeitpunkt zum Gehen zwischen jetzt und `leaveTs`: der früheste Moment mit der
+ * höchsten Netto-Arbeitszeit. Liegt er vor `leaveTs`, verliert man beim späteren Gehen Zeit
+ * (automatischer Pausenabzug) oder gewinnt nichts.
+ */
+export function bestLeaveUntil(day, leaveTs, now) {
+  let best = null;
+  for (let t = toMinutes(now); t <= toMinutes(leaveTs); t++) {
+    const ts = t * MS_PER_MIN;
+    const net = netIfLeaving(day, ts, now);
+    if (!best || net > best.net) best = { at: ts, net };
+  }
+  return best;
+}
+
 /**
  * Warnungen für den laufenden Tag (nur solange eingecheckt).
  * Typen: six-pre, six-loss (Tage mit Soll ≤ 6:00 h), nine-pre, nine-loss, max-pre, max-reached.

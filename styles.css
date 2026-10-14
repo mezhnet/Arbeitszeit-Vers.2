@@ -178,6 +178,15 @@ h1, h2, h3 { line-height: 1.2; }
 .hero-sub { min-height: 1.4em; color: var(--muted); }
 .hero-word .hero-value { font-size: clamp(2.3rem, 11vw, 3rem); padding: 6px 0; }
 .hero-idle .hero-value { color: var(--muted); }
+.hero { cursor: pointer; }
+.hero-planned { border: 2px solid var(--accent); }
+.hero-plan {
+  margin-top: 8px; padding: 8px 14px; min-height: 40px;
+  border: none; border-radius: 999px;
+  background: var(--surface-2); color: var(--accent);
+  font-size: .88rem; font-weight: 650;
+}
+.hero-reached .hero-plan { background: rgb(255 255 255 / 35%); color: var(--go-soft-ink); }
 .hero-reached { border-color: transparent; background: var(--go-soft); }
 .hero-reached .hero-label, .hero-reached .hero-value, .hero-reached .hero-sub { color: var(--go-soft-ink); }
 
@@ -470,6 +479,26 @@ dialog { color: var(--text); }
 .confirm p { margin: 0 0 18px; color: var(--muted); }
 .confirm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .confirm-buttons .btn:only-child { grid-column: 1 / -1; }
+
+/* Planungs-Dialog „Früher gehen“ */
+.plan .hint { margin: 0 0 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip {
+  min-height: 44px; padding: 8px 14px;
+  border: 1.5px solid var(--border); border-radius: 999px;
+  background: var(--bg); font-weight: 650;
+}
+.chip.active { border-color: var(--accent); background: var(--accent); color: var(--accent-ink); }
+.plan-hm { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 6px; }
+.plan-hm input { text-align: center; font-size: 1.2rem; font-weight: 650; }
+.plan .field { margin: 12px 0; }
+.plan-result { margin: 4px 0 16px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); }
+.plan-result .hint { margin: 6px 0 0; }
+.plan-row { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; }
+.plan-row b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.plan-tip { margin: 8px 0 0; color: var(--warn-ink); background: var(--warn-bg); padding: 8px 10px; border-radius: 10px; font-size: .88rem; font-weight: 600; }
+.errors-inline { margin: 0; color: var(--minus); font-weight: 650; }
+.confirm .link-btn { margin: 10px auto 0; }
 
 .fatal { padding: 24px; text-align: center; }
 

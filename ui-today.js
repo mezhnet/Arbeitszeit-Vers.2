@@ -3,10 +3,11 @@
 // damit Buttons beim Antippen nie ausgetauscht werden.
 
 import { state, getDay, emptyDay, putDay, removeDay } from './store.js';
-import { RULES, ABSENCES, dayResult, computeEnd, getWarnings, totals } from './calc.js';
-import { keyOf, clock, toMinutes, fmtDuration, fmtBalance, fmtStopwatch, fmtDateLong, fmtDate, MS_PER_MIN } from './time.js';
+import { RULES, ABSENCES, dayResult, computeEnd, planEnd, getWarnings, totals } from './calc.js';
+import { keyOf, clock, toMinutes, addDays, fmtDuration, fmtBalance, fmtStopwatch, fmtDateLong, fmtDate, MS_PER_MIN } from './time.js';
 import { esc, toast, vibrate, confirmDialog, ICONS } from './ui-common.js';
 import { openDayEditor } from './ui-history.js';
+import { openPlanDialog, canPlan } from './ui-plan.js';
 
 let root = null;
 let navigate = () => {};
@@ -29,10 +30,11 @@ export function mountToday(container, { goTo }) {
       <button type="button" class="icon-btn" data-action="edit-today" aria-label="Heute bearbeiten">${ICONS.edit}</button>
     </header>
     <div class="stack" data-el="banners"></div>
-    <section class="hero" data-el="hero" aria-live="polite">
+    <section class="hero" data-el="hero" data-action="plan" aria-live="polite">
       <div class="hero-label" data-el="heroLabel"></div>
       <div class="hero-value" data-el="heroValue"></div>
       <div class="hero-sub" data-el="heroSub"></div>
+      <button type="button" class="hero-plan" data-action="plan" data-el="heroPlan"></button>
     </section>
     <div class="stack" data-el="warnings"></div>
     <section class="stats">
@@ -112,6 +114,9 @@ export function updateToday() {
   const r = dayResult(key, day, state.settings, now);
   const ev = r.ev;
   const status = !ev.hasTimes ? 'idle' : ev.open ? (ev.pauseRunning ? 'pause' : 'work') : 'done';
+  // Geplante Arbeitszeit („früher gehen“) ersetzt für Feierabend und Warnungen das Soll
+  const plan = canPlan(day) && day?.plan != null ? day.plan : null;
+  const goal = plan ?? r.target;
 
   const cacheKey = `${state.version}|${toMinutes(now)}`;
   if (totalsCache.key !== cacheKey) totalsCache = { key: cacheKey, value: totals(state.days, state.settings, now) };
@@ -119,10 +124,10 @@ export function updateToday() {
 
   setText(el.date, fmtDateLong(key));
   setText(el.target, targetLine(r));
-  renderBanners(key, t);
-  renderHero(r, day, status, now);
-  renderWarnings(day, r, status, now);
-  renderStats(r, day, status);
+  renderBanners(key, t, now);
+  renderHero(r, day, status, now, plan);
+  renderWarnings(day, r, status, now, goal);
+  renderStats(r, day, status, goal);
 
   setBalance(el.week, t.week, 'total-value');
   setBalance(el.month, t.month, 'total-value');
@@ -140,7 +145,9 @@ function targetLine(r) {
   return `Soll heute ${fmtDuration(r.target)} h`;
 }
 
-function renderBanners(key, t) {
+const BACKUP_REMIND_DAYS = 30;
+
+function renderBanners(key, t, now) {
   const open = Object.values(state.days)
     .filter((d) => d.date < key && d.checkIn != null && d.checkOut == null)
     .sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -160,47 +167,60 @@ function renderBanners(key, t) {
       button: '<button type="button" class="btn btn-small" data-action="goto-history">Ansehen</button>',
     });
   }
+  // Backup-Erinnerung: nach 30 Tagen ohne Sicherung (frühestens 2 Wochen nach Erfassungsbeginn)
+  const s = state.settings;
+  const due = s.lastBackupAt ? now - s.lastBackupAt > BACKUP_REMIND_DAYS * 86400000 : addDays(s.startDate, 14) <= key;
+  if (due && Object.keys(state.days).length > 0) {
+    html += alertHtml({
+      level: 'info',
+      title: s.lastBackupAt ? `Letztes Backup vor über ${BACKUP_REMIND_DAYS} Tagen` : 'Noch kein Backup gespeichert',
+      button: '<button type="button" class="btn btn-small" data-action="goto-settings">Sichern</button>',
+    });
+  }
   setHtml('banners', el.banners, html);
 }
 
-function renderHero(r, day, status, now) {
+function renderHero(r, day, status, now, plan) {
   let label = '';
   let value = '';
   let sub = '';
   let mood = '';
+  const goal = plan ?? r.target;
+  const planInfo = plan != null ? `Gleitzeit heute ${fmtBalance(plan - r.target)}` : '';
   if (status === 'done') {
     label = 'Ausgecheckt um';
     value = clock(day.checkOut);
     sub = `Netto ${fmtDuration(r.net)} h · Saldo ${fmtBalance(r.balance)}`;
     mood = 'done';
-  } else if (r.absence && status === 'idle') {
+  } else if (r.absence && status === 'idle' && plan == null) {
     label = 'Heute';
     value = ABSENCES[r.absence];
     sub = r.absence === 'gleittag' ? `${fmtBalance(r.balance)} vom Gleitzeitkonto` : 'Soll gilt als erfüllt';
     mood = 'off';
-  } else if (r.target <= 0) {
+  } else if (goal <= 0) {
     label = r.holiday ? 'Feiertag' : 'Kein Soll heute';
     value = status === 'idle' ? 'Frei' : fmtDuration(r.net);
     sub = status === 'idle' ? r.holiday || 'Wochenende' : 'Jede Minute zählt als Plus';
     mood = 'off';
   } else if (status === 'idle') {
-    const e = computeEnd({ checkIn: now, checkOut: null, pauses: [] }, r.target, now);
-    label = 'Feierabend um';
+    const e = planEnd(null, goal, now);
+    label = plan != null ? 'Geplanter Feierabend' : 'Feierabend um';
     value = e ? clock(e.end) : '—';
-    sub = 'wenn du jetzt eincheckst';
+    sub = ['wenn du jetzt eincheckst', planInfo].filter(Boolean).join(' · ');
     mood = 'idle';
   } else {
-    const e = computeEnd(day, r.target, now);
+    const e = computeEnd(day, goal, now);
     if (e?.reached) {
-      label = 'Tagessoll erreicht';
+      label = plan != null ? 'Geplante Zeit erreicht' : 'Tagessoll erreicht';
       value = 'Feierabend';
       sub = `Saldo heute ${fmtBalance(r.balance)}`;
       mood = 'reached';
     } else if (e) {
-      label = 'Feierabend um';
+      label = plan != null ? 'Geplanter Feierabend' : 'Feierabend um';
       value = clock(e.end);
       sub = `noch ${fmtDuration(toMinutes(e.end) - toMinutes(now))} h`;
       if (e.pauseUntil) sub += ` · Pause bis mind. ${clock(e.pauseUntil)}`;
+      if (planInfo) sub += ` · ${planInfo}`;
       mood = 'work';
     } else {
       label = 'Feierabend';
@@ -211,7 +231,10 @@ function renderHero(r, day, status, now) {
   setText(el.heroValue, value);
   setText(el.heroSub, sub);
   const isWord = !/^[\d—]/.test(value); // Wörter wie „Urlaub“ etwas kleiner als Uhrzeiten
-  setClass(el.hero, `hero hero-${mood}${isWord ? ' hero-word' : ''}`);
+  setClass(el.hero, `hero hero-${mood}${isWord ? ' hero-word' : ''}${plan != null ? ' hero-planned' : ''}`);
+  const plannable = canPlan(day);
+  el.heroPlan.hidden = !plannable;
+  setText(el.heroPlan, plan != null ? `Plan ${fmtDuration(plan)} h · ändern` : 'Früher oder später gehen? Planen');
 }
 
 function warningView(w) {
@@ -259,10 +282,10 @@ function warningView(w) {
   }
 }
 
-function renderWarnings(day, r, status, now) {
+function renderWarnings(day, r, status, now, goal) {
   const items = [];
   if (status === 'work' || status === 'pause') {
-    for (const w of getWarnings(day, r.target, now)) {
+    for (const w of getWarnings(day, goal, now)) {
       const view = warningView(w);
       if (view) items.push({ id: w.type, ...view });
     }
@@ -281,7 +304,7 @@ function renderWarnings(day, r, status, now) {
   }
 }
 
-function renderStats(r, day, status) {
+function renderStats(r, day, status, goal) {
   const ev = r.ev;
   setText(el.net, fmtDuration(ev.hasTimes ? r.net : 0));
   setText(el.netSub, status === 'done' ? `${clock(day.checkIn)}–${clock(day.checkOut)}` : status === 'idle' ? '' : `seit ${clock(day.checkIn)}`);
@@ -289,7 +312,7 @@ function renderStats(r, day, status) {
   setText(el.pause, fmtDuration(ev.actualPause));
   let pauseSub = '';
   if (ev.autoPause > 0) pauseSub = `+${ev.autoPause} Min. automatisch`;
-  else if ((status === 'work' || status === 'pause') && r.target > RULES.firstLimit && ev.qualifyingPause < RULES.firstBreak) {
+  else if ((status === 'work' || status === 'pause') && goal > RULES.firstLimit && ev.qualifyingPause < RULES.firstBreak) {
     pauseSub = `Pflichtpause: noch ${RULES.firstBreak - ev.qualifyingPause} Min.`;
   } else if (ev.qualifyingPause >= RULES.firstBreak) pauseSub = 'Mindestpause ✓';
   setText(el.pauseSub, pauseSub);
@@ -345,6 +368,8 @@ async function onClick(event) {
   if (action === 'edit-today') return openDayEditor(keyOf(Date.now()));
   if (action === 'open-day') return openDayEditor(btn.dataset.day);
   if (action === 'goto-history') return navigate('history');
+  if (action === 'goto-settings') return navigate('settings');
+  if (action === 'plan') return canPlan(getDay(keyOf(Date.now()))) ? openPlanDialog() : undefined;
   // Schutz gegen versehentlichen Doppeltipp
   if (Date.now() < busyUntil) return;
   busyUntil = Date.now() + 1200;
